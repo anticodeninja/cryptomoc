@@ -1,49 +1,60 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+import sys
 import random
 import subprocess
-import os
 
-ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890'
+HERE = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(HERE))
+
+import common  # noqa
+
 MASKS = [
     'Наверно, ваш код: {0}',
     'Но также возможно ваш код: {0}',
     'Но не исключено, что: {0}'
 ]
-STUDENTS = 1
-PASS_LEN = 8
 
+students = common.load_students()
 
-def genpass(length):
-    return ''.join(random.choice(ALPHABET) for x in range(length))
+if os.path.exists('list.csv'):
+    passwords = [x for x in common.load_csv('list.csv')]
+else:
+    passwords = [[x.name, ''] for x in students]
 
+for i, student in enumerate(students):
+    print('Gen {0}: {1}'.format(i + 1, student))
 
-passwords = open('list.rst', 'w')
-for i in range(STUDENTS):
-    print('Gen {0}'.format(i))
+    if len(passwords[i][1]) > 0:
+        print('already generated')
+        continue
+
+    passwords[i][1] = common.gen_pass()
     correct = random.choice(MASKS)
     for j, mask in enumerate(MASKS):
-        password = genpass(PASS_LEN)
-        filename = 'file{0}_{1}.bin'.format(i, j)
+        filename = 'file{0}_{1}.bin'.format(i + 1, j)
         code_file = open('temp', 'w')
-        print(mask.format(password), file=code_file)
+        print(mask.format(passwords[i][1]), file=code_file)
         code_file.close()
 
         subprocess.check_call(['gpg', '--batch', '--yes',
                                '--output', filename, '--clear-sign', 'temp'])
+        os.unlink('temp')
 
-        if mask != correct:
-            code_file = open(filename, 'r')
-            content = code_file.read()
-            code_file.close()
+        if mask == correct:
+            continue
 
-            content = content.replace(password, genpass(PASS_LEN))
+        code_file = open(filename, 'r')
+        content = code_file.read()
+        code_file.close()
 
-            code_file = open(filename, 'w')
-            code_file.write(content)
-            code_file.close()
-        else:
-            print(password, file=passwords)
+        content = content.replace(passwords[i][1], common.gen_pass())
 
-os.unlink('temp')
+        code_file = open(filename, 'w')
+        code_file.write(content)
+        code_file.close()
+
+
+common.save_csv('list.csv', passwords)
