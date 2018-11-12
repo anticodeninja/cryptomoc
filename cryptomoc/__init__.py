@@ -7,8 +7,6 @@ import argparse
 import importlib
 import inspect
 import os
-import random
-import re
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 

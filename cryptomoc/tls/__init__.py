@@ -8,6 +8,7 @@ TODO
 import ctypes
 import os
 import random
+import re
 import socket
 import ssl
 import subprocess
@@ -16,6 +17,9 @@ import cryptomoc.common as common
 _M = common.module_file(__name__)
 VARIANTS_DB = 'variants.csv'
 CACHE_DB = 'cache.db'
+DUMP_FILE = 'dump.pcapng'
+KEYLOG_FILE = 'keylog'
+MASK = 'Your code: '
 
 
 def _get_rsa(fingerprint):
@@ -53,7 +57,7 @@ def _check(cache, data):
     module = common.extract_module(cert_data)
     code = next((x[1] for x in cache if x[0] == module))
 
-    return 'Your code: {}'.format(code) if code\
+    return MASK + code if code\
         else 'Verification was not passed'
 
 
@@ -133,7 +137,7 @@ def client(addr, cert):
             ]
 
     except Exception:
-        print('Incorrect version of openssl, debuglog is disabled')
+        print('Incorrect version of openssl, keylog is disabled')
 
     host_addr, host_port = addr.split(':')
     server_sni_hostname = 'anticode.ninja'  # TODO Unhardcode
@@ -162,7 +166,7 @@ def client(addr, cert):
         res = SSL_SESSION_get_master_key(session_ptr, buf, len(buf))
         master_key = bytes(buf)[:res].hex()
 
-        with open(_M('debuglog'), 'a') as log_file:
+        with open(_M('keylog'), 'a') as log_file:
             print('CLIENT_RANDOM', client_random, master_key, file=log_file)
 
     buf = b''  # Buffer to hold received client data
@@ -212,7 +216,27 @@ def server(listen_port):
             common.safe_exec(lambda: conn and conn.close())
 
 
-def check(mask):
+def check():
     """Check student answer"""
 
-    common.check_code(_M(VARIANTS_DB), mask)
+    output = subprocess.check_output([
+        'tshark', '-x',
+        '-o', 'ssl.desegment_ssl_records: TRUE',
+        '-o', 'ssl.desegment_ssl_application_data: TRUE',
+        '-o', 'ssl.keylog_file: {}'.format(_M(KEYLOG_FILE)),
+        '-r', _M(DUMP_FILE)], stderr=subprocess.DEVNULL).decode('utf8')
+
+    data_re = re.compile(r'\S+\s{2,}(.+?)\s{2,}.+')
+    block = None
+    for line in output.split('\n'):
+        line = line.strip()
+        if line.startswith('Decrypted SSL'):
+            block = []
+        elif block is not None and len(line) == 0:
+            data = common.safe_exec(lambda: bytes(block).decode('ascii'), True)
+            if data and data.startswith(MASK):
+                common.check_code(_M(VARIANTS_DB), data[len(MASK):])
+            block = None
+        elif block is not None:
+            line = data_re.match(line).group(1)
+            block += [int(x, 16) for x in line.split(' ')]

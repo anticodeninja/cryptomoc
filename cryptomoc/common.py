@@ -8,7 +8,7 @@ import sys
 
 STUDENTS_DB = 'students.csv'
 ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890'
-MODULES_RE = re.compile("Modulus:\n((?:[0-9a-f]|:\n|:| )+)", re.MULTILINE)
+MODULES_RE = re.compile(r"Modulus:\n((?:[0-9a-f]|:\n|:|\ )+)", re.MULTILINE)
 PASSWORD_LEN = 8
 
 
@@ -34,11 +34,12 @@ def extract_module(data):
     return ''.join(x for x in modulus.group(1) if x in '0123456789abcdef')
 
 
-def safe_exec(callback):
+def safe_exec(callback, supress=False):
     try:
-        callback()
+        return callback()
     except Exception as ex:
-        print(ex)
+        if not supress:
+            print(ex)
 
 
 def load_csv(filename):
