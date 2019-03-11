@@ -6,6 +6,7 @@ import random
 import re
 import sys
 
+HERE = os.path.abspath(os.path.dirname(__file__))
 STUDENTS_DB = 'students.csv'
 ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890'
 MODULES_RE = re.compile(r"Modulus:\n((?:[0-9a-f]|:\n|:|\ )+)", re.MULTILINE)
@@ -109,6 +110,10 @@ def create_module(module):
 def module_file(module):
     module_path = module.split('.')[-1]
     return lambda x: os.path.join(module_path, x)
+
+def resource_file(module):
+    module_path = module.split('.')[-1]
+    return lambda x: os.path.join(HERE, module_path, x)
 
 
 def to_hex(data):

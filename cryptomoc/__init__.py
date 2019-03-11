@@ -15,6 +15,7 @@ class LazySubParser(argparse.ArgumentParser):
     def __init__(self, *args, **kwargs):
         self.__module = kwargs.pop('module', None)
         self.__exports = kwargs.pop('exports', None)
+        kwargs['formatter_class'] = argparse.RawDescriptionHelpFormatter
         super().__init__(*args, **kwargs)
 
     def parse_known_args(self, args=None, namespace=None):
@@ -56,8 +57,8 @@ class LazySubParser(argparse.ArgumentParser):
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.description = "Applied Cryptography Practicum"
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.description = 'Практический практикум по курсу "Прикладная криптография"'
 
     subparsers = parser.add_subparsers(dest='module',
                                        title='modules',

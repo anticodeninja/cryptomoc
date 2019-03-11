@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Core utils for course management"""
+"""
+Набор вспомогательных функций для проведения практик по курсу "Прикладная криптография"
+"""
 
+import importlib
 import os
 import subprocess
 import urllib.request
@@ -50,3 +53,17 @@ def importpgp():
         key_url = 'https://keybase.io/{0}/key.asc'.format(student.keybase)
         key_data = urllib.request.urlopen(key_url).read()
         subprocess.check_output(['gpg', '--import', '-'], input=key_data)
+
+def modules():
+    """Show description for all tasks"""
+
+    for module_name in os.listdir(common.HERE):
+        module_path = os.path.join(common.HERE, module_name, '__init__.py')
+        if not os.path.exists(module_path):
+            continue
+
+        print(module_name)
+        print(len(module_name) * '=')
+        module = importlib.import_module(__name__.replace('core', module_name))
+        print(module.__doc__)
+        print()
