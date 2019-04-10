@@ -12,7 +12,7 @@ import urllib.request
 import cryptomoc.common as common
 
 
-def gen():
+def init():
     """Generate students database stub"""
 
     if os.path.exists(common.STUDENTS_DB):
