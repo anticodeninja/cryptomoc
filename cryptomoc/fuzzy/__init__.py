@@ -58,7 +58,11 @@ def _gen_native(variant, target, debug=None, reference=None):
     if reference is not None: macros.append(('REFERENCE', reference))
 
     compiler = ccompiler.new_compiler()
-    objects = compiler.compile([_R('native.c')], macros=macros, extra_postargs=extra_postargs)
+    objects = compiler.compile(
+        sources=[_R('native.c')],
+        output_dir=_M('tmp/{}'.format(target)),
+        macros=macros,
+        extra_postargs=extra_postargs)
     compiler.link_shared_object(objects, target, extra_postargs=extra_postargs)
     if not debug: subprocess.check_call(['strip', target])
 
@@ -166,6 +170,7 @@ def gen():
 
         print('generated')
 
+    shutil.rmtree(_M('tmp'))
     common.save_csv(_M(VARIANTS_DB), passwords)
 
     print('Created students tasks')
